@@ -6,7 +6,7 @@ RUN apt-get update \
     && apt-get install -y \
         nano python3-pip python3-mock libpython3-dev \
         libpython3-all-dev python-is-python3 wget curl cmake \
-        software-properties-common sudo \
+        software-properties-common sudo pkg-config libhdf5-dev \
     && sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
@@ -28,13 +28,14 @@ RUN pip install pip -U \
     && pip install tf-keras~=2.16 \
     && pip install flatbuffers>=23.5.26
 
+# todo: 
 # Re-release flatc with some customizations of our own to address
 # the lack of arithmetic precision of the quantization parameters
 # https://github.com/PINTO0309/onnx2tf/issues/196
-RUN wget https://github.com/PINTO0309/onnx2tf/releases/download/1.16.31/flatc.tar.gz \
-    && tar -zxvf flatc.tar.gz \
-    && chmod +x flatc \
-    && mv flatc /usr/bin/
+# RUN wget https://github.com/PINTO0309/onnx2tf/releases/download/1.16.31/flatc.tar.gz \
+#     && tar -zxvf flatc.tar.gz \
+#     && chmod +x flatc \
+#     && mv flatc /usr/bin/
 
 ENV USERNAME=user
 RUN echo "root:root" | chpasswd \
