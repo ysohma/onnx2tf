@@ -28,14 +28,13 @@ RUN pip install pip -U \
     && pip install tf-keras~=2.16 \
     && pip install flatbuffers>=23.5.26
 
-# todo: 
 # Re-release flatc with some customizations of our own to address
 # the lack of arithmetic precision of the quantization parameters
 # https://github.com/PINTO0309/onnx2tf/issues/196
-# RUN wget https://github.com/PINTO0309/onnx2tf/releases/download/1.16.31/flatc.tar.gz \
-#     && tar -zxvf flatc.tar.gz \
-#     && chmod +x flatc \
-#     && mv flatc /usr/bin/
+RUN wget https://github.com/PINTO0309/onnx2tf/releases/download/1.16.31/flatc.tar.gz \
+    && tar -zxvf flatc.tar.gz \
+    && chmod +x flatc \
+    && mv flatc /usr/bin/
 
 ENV USERNAME=user
 RUN echo "root:root" | chpasswd \
