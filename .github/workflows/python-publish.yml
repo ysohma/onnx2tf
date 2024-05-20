@@ -108,7 +108,9 @@ jobs:
           # tags: ${{ steps.meta_dh.outputs.tags }}
           labels: ${{ steps.meta_dh.outputs.labels }}
           outputs: type=image,name=${{ env.DOCKER_REGISTRY }}/sohma440/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
-        
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
