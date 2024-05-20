@@ -120,10 +120,10 @@ jobs:
         run: |
           mkdir -p /tmp/digests/gh
           digest="${{ steps.build_gh.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
+          touch "/tmp/digests/gh/${digest#sha256:}"
           mkdir -p /tmp/digests/dh
           digest="${{ steps.build_dh.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
+          touch "/tmp/digests/dh/${digest#sha256:}"
           
       - name: Upload digest
         uses: actions/upload-artifact@v4
