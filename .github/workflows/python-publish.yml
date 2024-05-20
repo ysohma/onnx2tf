@@ -83,7 +83,12 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: true
+          tags: ${{ steps.meta_gh.outputs.tags }}
           labels: ${{ steps.meta_gh.outputs.labels }}
+          # todo
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Log in to the Docker Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -106,7 +111,7 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ steps.meta_dh.outputs.tags }}
+          # tags: ${{ steps.meta_dh.outputs.tags }}
           labels: ${{ steps.meta_dh.outputs.labels }}
           # todo
           outputs: type=image,name=${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf,push-by-digest=true,name-canonical=true,push=true
