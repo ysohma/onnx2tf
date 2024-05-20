@@ -85,7 +85,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           
       - name: Build and push by digest(Github Container Registory)
-        id: build
+        id: build_gh
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
@@ -105,6 +105,7 @@ jobs:
 
 
       - name: Build and push by digest(Docker Hub)
+        id: build_dh
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
@@ -119,9 +120,11 @@ jobs:
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"          
-        
+          digest="${{ steps.build_dh.outputs.digest }}"
+          touch "/tmp/digests/dh${digest#sha256:}"
+          digest="${{ steps.build_gh.outputs.digest }}"
+          touch "/tmp/digests/gh${digest#sha256:}"
+      
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
@@ -160,7 +163,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create manifest list and push to Docker Hub
-        working-directory: /tmp/digests
+        working-directory: /tmp/digests/gh
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
           $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
@@ -185,7 +188,7 @@ jobs:
           password: ${{ secrets.DH_ACCESS_TOKEN }}
         
       - name: Create manifest list and push to Docker Hub
-        working-directory: /tmp/digests
+        working-directory: /tmp/digests/dh
         # todo
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
