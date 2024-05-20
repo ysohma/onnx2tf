@@ -103,7 +103,6 @@ jobs:
         with:
           images: ${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf
 
-
       - name: Build and push by digest(Docker Hub)
         id: build_dh
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
@@ -121,9 +120,9 @@ jobs:
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build_dh.outputs.digest }}"
-          touch "/tmp/digests/dh${digest#sha256:}"
+          touch "/tmp/digests/${digest#sha256:}"
           digest="${{ steps.build_gh.outputs.digest }}"
-          touch "/tmp/digests/gh${digest#sha256:}"
+          touch "/tmp/digests/${digest#sha256:}"
       
       - name: Upload digest
         uses: actions/upload-artifact@v4
@@ -163,7 +162,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create manifest list and push to Docker Hub
-        working-directory: /tmp/digests/gh
+        working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
           $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
@@ -188,7 +187,7 @@ jobs:
           password: ${{ secrets.DH_ACCESS_TOKEN }}
         
       - name: Create manifest list and push to Docker Hub
-        working-directory: /tmp/digests/dh
+        working-directory: /tmp/digests
         # todo
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
