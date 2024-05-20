@@ -8,8 +8,12 @@ on:
 env:
   REGISTRY: ghcr.io
   DOCKER_REGISTRY: docker.io
+  # todo
+  # DOCKER_REGISTRY_USER: pinto0309
   DOCKER_REGISTRY_USER: sohma440
-  IMAGE_NAME: ${{ github.repository }}
+  # todo
+  # IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: onnx2tf
 
 jobs:
   pypi-deploy:
@@ -47,7 +51,7 @@ jobs:
       matrix:
         platform:
           - linux/amd64
-          - linux/arm64
+          # - linux/arm64
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
