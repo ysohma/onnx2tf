@@ -106,7 +106,7 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: true
-          # tags: ${{ steps.meta_dh.outputs.tags }}
+          tags: ${{ steps.meta_dh.outputs.tags }}
           labels: ${{ steps.meta_dh.outputs.labels }}
           # todo
           outputs: type=image,name=${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf,push-by-digest=true,name-canonical=true,push=true
