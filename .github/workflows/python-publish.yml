@@ -11,9 +11,8 @@ env:
   # todo
   # DOCKER_REGISTRY_USER: pinto0309
   DOCKER_REGISTRY_USER: sohma440
-  # todo
-  # IMAGE_NAME: ${{ github.repository }}
-  IMAGE_NAME: onnx2tf
+  IMAGE_NAME: ${{ github.repository }}
+  # IMAGE_NAME: onnx2tf
 
 jobs:
   pypi-deploy:
@@ -65,26 +64,26 @@ jobs:
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
 
-      # - name: Log in to the GitHub Container registry
-      #   uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
-      #   with:
-      #     registry: ${{ env.REGISTRY }}
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Extract metadata (tags, labels) for Docker
-      #   id: meta_gh
-      #   uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-      #   with:
-      #     images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Log in to the GitHub Container registry
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Github Container Registory
+        id: meta_gh
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           
-      # - name: Build and push Docker image
-      #   uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
-      #   with:
-      #     context: .
-      #     platforms: ${{ matrix.platform }}
-      #     push: true
-      #     tags: ${{ steps.meta_gh.outputs.tags }}
-      #     labels: ${{ steps.meta_gh.outputs.labels }}
+      - name: Build and push by digest(Github Container Registory)
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: true
+          labels: ${{ steps.meta_gh.outputs.labels }}
 
       - name: Log in to the Docker Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -92,13 +91,15 @@ jobs:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ env.DOCKER_REGISTRY_USER }}
           password: ${{ secrets.DH_ACCESS_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
+
+      - name: Extract metadata (tags, labels) for Docker Hub
         id: meta_dh
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: ${{ env.DOCKER_REGISTRY }}/sohma440/${{ env.IMAGE_NAME }}
+          # todo
+          images: ${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf
       
-      - name: Build and push by digest
+      - name: Build and push by digest(Docker Hub)
         id: build
         uses: docker/build-push-action@v5
         with:
@@ -107,11 +108,12 @@ jobs:
           push: true
           # tags: ${{ steps.meta_dh.outputs.tags }}
           labels: ${{ steps.meta_dh.outputs.labels }}
-          outputs: type=image,name=${{ env.DOCKER_REGISTRY }}/sohma440/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          # todo
+          outputs: type=image,name=${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          
-      - name: Export digest
+
+      - name: Export digest(Docker Hub)
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
@@ -139,26 +141,53 @@ jobs:
               
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-              
-      - name: Docker meta
-        id: meta
+
+      # Github Container Registory
+      - name: Extract metadata (tags, labels) for Github Container Registory
+        id: meta_gh
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_REGISTRY }}/sohma440/${{ env.IMAGE_NAME }}
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Log in to the Docker Container registry
+      - name: Log in to the GitHub Container registry
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create manifest list and push to Docker Hub
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          $(printf '${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
+          
+      - name: Inspect image(Github Container Registory)
+        run: |
+          docker buildx imagetools inspect ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta_gh.outputs.version }}          
+
+      # Docker Hub
+      - name: Extract metadata (tags, labels) for Docker Hub
+        id: meta_dh
+        uses: docker/metadata-action@v5
+        with:
+          # todo
+          images: ${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf
+
+      - name: Log in to the Docker Hub
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ env.DOCKER_REGISTRY_USER }}
           password: ${{ secrets.DH_ACCESS_TOKEN }}
         
-      - name: Create manifest list and push
+      - name: Create manifest list and push to Docker Hub
         working-directory: /tmp/digests
+        # todo
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-          $(printf '${{ env.DOCKER_REGISTRY }}/sohma440/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
+          $(printf '${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf@sha256:%s ' *)          
         
-      - name: Inspect image
+      - name: Inspect image(Docker Hub)
         run: |
-          docker buildx imagetools inspect ${{ env.DOCKER_REGISTRY }}/sohma440/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}          
+          docker buildx imagetools inspect ${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf:${{ steps.meta_dh.outputs.version }}          
