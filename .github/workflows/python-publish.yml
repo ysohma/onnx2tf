@@ -87,11 +87,6 @@ jobs:
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Export digest for GCR
-        run: |
-          mkdir -p /tmp/digests/gh
-          digest="${{ steps.build_gh.outputs.digest }}"
-          touch "/tmp/digests/gh/${digest#sha256:}"
 
       # Docker Hub
       - name: Log in to Docker Hub
@@ -118,7 +113,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Export digest for Docker Hub
+      - name: Export digest
         run: |
           mkdir -p /tmp/digests/gh
           digest="${{ steps.build_gh.outputs.digest }}"
