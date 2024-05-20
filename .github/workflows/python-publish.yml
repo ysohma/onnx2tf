@@ -90,9 +90,9 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: true
-          tags: |
-            ${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf:latest
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          # tags: |
+          #   ${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf:latest
+          #   ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
           labels: ${{ steps.meta_gh.outputs.labels }}
           # todo
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
