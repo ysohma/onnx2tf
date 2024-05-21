@@ -61,11 +61,8 @@ jobs:
         run: |
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
-
-      - name: Lower
-        run: |
-          NAME="SOHMA440/onnx2tf"
-          echo "REPO=${NAME,,}"
+          echo "GCR_REPO=$REGISTRY/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+          echo "DH_REPO="$DOCKER_REGISTRY/${GITHUB_REPOSITORY,,} >> $GITHUB_ENV
 
       # For Github Container Registory
       - name: Log in to GCR
@@ -81,13 +78,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}  # GCR
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}  # Docker Hub
-
-      - name: Check metadata
-        run: |
-          echo "${{ steps.meta_gh.outputs.tags[0] }}"
-          echo "${{ steps.meta_gh.outputs.json }}"
+            ${{ env.GCR_REPO }}}  # GCR
+            ${{ env.DH_REPO }}  # Docker Hub
 
 
       # - name: Build and push by digest
