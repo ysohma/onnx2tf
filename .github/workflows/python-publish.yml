@@ -71,10 +71,16 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+      # For Docker Hub
+      - name: Log in to the Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ env.DOCKER_REGISTRY_USER }}
+          password: ${{ secrets.DH_ACCESS_TOKEN }}
 
       - name: Extract metadata (tags, labels) for GCR
-        id: meta_gh
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
@@ -89,26 +95,26 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: true
-          labels: ${{ steps.meta_gh.outputs.labels }}
+          labels: ${{ steps.meta.outputs.labels }}
           outputs: |
             type=image,name=${{ env.GCR_REPO }},push-by-digest=true,name-canonical=true,push=true
             type=image,name=${{ env.DH_REPO }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # - name: Export digest
-      #   run: |
-      #     mkdir -p /tmp/digests/gh
-      #     digest="${{ steps.build.outputs.digest }}"
-      #     touch "/tmp/digests/gh/${digest#sha256:}"
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
           
-      # - name: Upload digest
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: digests-${{ env.PLATFORM_PAIR }}
-      #     path: /tmp/digests/*
-      #     if-no-files-found: error
-      #     retention-days: 1
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
   
   # merge:
   #   runs-on: ubuntu-latest
