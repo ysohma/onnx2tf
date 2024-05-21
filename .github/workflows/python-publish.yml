@@ -80,7 +80,10 @@ jobs:
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}  # Docker Hub
 
       - name: Check metadata
-        run: echo "${{ steps.meta_gh.outputs.images }}"
+        run: |
+          echo "${{ steps.meta_gh.outputs.images }}"
+          echo "${{ steps.meta_gh.outputs.json }}"
+
 
       # - name: Build and push by digest
       #   id: build
