@@ -79,31 +79,34 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}  # GCR
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}  # Docker Hub
 
-      - name: Build and push by digest
-        id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: ${{ matrix.platform }}
-          push: true
-          labels: ${{ steps.meta_gh.outputs.labels }}
-          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Check metadata
+        run: echo "${{ steps.meta_gh.outputs.images }}"
 
-      - name: Export digest
-        run: |
-          mkdir -p /tmp/digests/gh
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/gh/${digest#sha256:}"
+      # - name: Build and push by digest
+      #   id: build
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     platforms: ${{ matrix.platform }}
+      #     push: true
+      #     labels: ${{ steps.meta_gh.outputs.labels }}
+      #     outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
+
+      # - name: Export digest
+      #   run: |
+      #     mkdir -p /tmp/digests/gh
+      #     digest="${{ steps.build.outputs.digest }}"
+      #     touch "/tmp/digests/gh/${digest#sha256:}"
           
-      - name: Upload digest
-        uses: actions/upload-artifact@v4
-        with:
-          name: digests-${{ env.PLATFORM_PAIR }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-          retention-days: 1
+      # - name: Upload digest
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: digests-${{ env.PLATFORM_PAIR }}
+      #     path: /tmp/digests/*
+      #     if-no-files-found: error
+      #     retention-days: 1
   
   # merge:
   #   runs-on: ubuntu-latest
