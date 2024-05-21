@@ -64,7 +64,8 @@ jobs:
 
       - name: Lower
         run: |
-          echo "REPO=${GITHUB_REPOSITORY,,}"
+          NAME="SOHMA440/onnx2tf"
+          echo "REPO=${NAME,,}"
 
       # For Github Container Registory
       - name: Log in to GCR
