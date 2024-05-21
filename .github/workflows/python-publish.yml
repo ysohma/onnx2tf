@@ -78,21 +78,23 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.GCR_REPO }}}  # GCR
+            ${{ env.GCR_REPO }}  # GCR
             ${{ env.DH_REPO }}  # Docker Hub
 
 
-      # - name: Build and push by digest
-      #   id: build
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: .
-      #     platforms: ${{ matrix.platform }}
-      #     push: true
-      #     labels: ${{ steps.meta_gh.outputs.labels }}
-      #     outputs: type=image,push-by-digest=true,name-canonical=true,push=true
-      #     cache-from: type=gha
-      #     cache-to: type=gha,mode=max
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: true
+          labels: ${{ steps.meta_gh.outputs.labels }}
+          outputs: |
+            type=image,name=${{ env.GCR_REPO }},push-by-digest=true,name-canonical=true,push=true
+            type=image,name=${{ env.DH_REPO }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # - name: Export digest
       #   run: |
