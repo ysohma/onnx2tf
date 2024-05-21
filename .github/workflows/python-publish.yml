@@ -9,9 +9,9 @@ env:
   REGISTRY: ghcr.io
   DOCKER_REGISTRY: docker.io
   DOCKER_REGISTRY_USER: sohma440
-  IMAGE_NAME: ysohma/onnx2tf
+  # IMAGE_NAME: sohma400/onnx2tf
   # DOCKER_REGISTRY_USER: pinto0309
-  # IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # pypi-deploy:
@@ -61,17 +61,17 @@ jobs:
         run: |
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
-          echo "GCR_REPO=$REGISTRY/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-          echo "DH_REPO="$DOCKER_REGISTRY/${GITHUB_REPOSITORY,,} >> $GITHUB_ENV
+          echo "GCR_REPO=$REGISTRY/${IMAGE_NAME,,}" >> $GITHUB_ENV
+          # echo "DH_REPO="$DOCKER_REGISTRY/${IMAGE_NAME,,} >> $GITHUB_ENV
+          echo "DH_REPO="$DOCKER_REGISTRY/sohma440/onnx2tf >> $GITHUB_ENV
 
-      # For Github Container Registory
       - name: Log in to GCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # For Docker Hub
+
       - name: Log in to the Docker Hub
         uses: docker/login-action@v3
         with:
@@ -86,7 +86,6 @@ jobs:
           images: |
             ${{ env.GCR_REPO }}  # GCR
             ${{ env.DH_REPO }}  # Docker Hub
-
 
       - name: Build and push by digest
         id: build
@@ -113,62 +112,61 @@ jobs:
         with:
           name: digests-${{ env.PLATFORM_PAIR }}
           path: /tmp/digests/*
-          if-no-files-found: error
           retention-days: 1
   
-  # merge:
-  #   runs-on: ubuntu-latest
-  #   needs:
-  #     - docker-deploy
-  #   steps:
-  #     - name: Download digests
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         path: /tmp/digests
-  #         pattern: digests-*
-  #         merge-multiple: true
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - docker-deploy
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
               
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-  #     # For Github Container Registory
-  #     - name: Log in to GCR
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-  #     - name: Extract metadata (tags, labels) for GCR
-  #       id: meta_gh
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-  #     - name: Create manifest list and push to GCR
-  #       working-directory: /tmp/digests/gh
-  #       run: |
-  #         docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-  #         $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
-  #     - name: Inspect image on GCR
-  #       run: |
-  #         docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta_gh.outputs.version }}          
+      # For Github Container Registory
+      - name: Log in to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for GCR
+        id: meta_gh
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Create manifest list and push to GCR
+        working-directory: /tmp/digests/gh
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
+      - name: Inspect image on GCR
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta_gh.outputs.version }}          
 
-  #     # For Docker Hub
-  #     - name: Log in to the Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.DOCKER_REGISTRY }}
-  #         username: ${{ env.DOCKER_REGISTRY_USER }}
-  #         password: ${{ secrets.DH_ACCESS_TOKEN }}
-  #     - name: Extract metadata (tags, labels) for Docker Hub
-  #       id: meta_dh
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
-  #     - name: Create manifest list and push to Docker Hub
-  #       working-directory: /tmp/digests/dh
-  #       run: |
-  #         docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-  #         $(printf '${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
-  #     - name: Inspect image on Docker Hub
-  #       run: |
-  #         docker buildx imagetools inspect ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta_dh.outputs.version }}
+      # For Docker Hub
+      - name: Log in to the Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ env.DOCKER_REGISTRY_USER }}
+          password: ${{ secrets.DH_ACCESS_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker Hub
+        id: meta_dh
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Create manifest list and push to Docker Hub
+        working-directory: /tmp/digests/dh
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          $(printf '${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
+      - name: Inspect image on Docker Hub
+        run: |
+          docker buildx imagetools inspect ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta_dh.outputs.version }}
