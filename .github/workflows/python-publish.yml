@@ -119,6 +119,12 @@ jobs:
     needs:
       - docker-deploy
     steps:
+      - name: Prepare
+        run: |
+          echo "GCR_REPO=$REGISTRY/${IMAGE_NAME,,}" >> $GITHUB_ENV
+          # echo "DH_REPO="$DOCKER_REGISTRY/${IMAGE_NAME,,} >> $GITHUB_ENV
+          echo "DH_REPO="$DOCKER_REGISTRY/sohma440/onnx2tf >> $GITHUB_ENV
+
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
@@ -136,37 +142,31 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for GCR
-        id: meta_gh
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-      - name: Create manifest list and push to GCR
-        working-directory: /tmp/digests/gh
-        run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-          $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
-      - name: Inspect image on GCR
-        run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta_gh.outputs.version }}          
 
-      # For Docker Hub
       - name: Log in to the Docker Hub
         uses: docker/login-action@v3
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ env.DOCKER_REGISTRY_USER }}
           password: ${{ secrets.DH_ACCESS_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker Hub
-        id: meta_dh
+
+      - name: Extract metadata (tags, labels) for GCR
+        id: meta_gh
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
-      - name: Create manifest list and push to Docker Hub
-        working-directory: /tmp/digests/dh
+          images: |
+            ${{ env.GCR_REPO }}
+            ${{ env.DH_REPO }}
+
+      - name: Create manifest list and push to GCR
+        working-directory: /tmp/digests/gh
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-          $(printf '${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
-      - name: Inspect image on Docker Hub
+          $(printf '${{ env.GCR_REPO }}@sha256:%s ' *)
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          $(printf '${{ env.DH_REPO }}@sha256:%s ' *)
+
+      - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta_dh.outputs.version }}
+          docker buildx imagetools inspect ${{ env.GCR_REPO }}:${{ steps.meta_gh.outputs.version }}
+          docker buildx imagetools inspect ${{ env.DH_REPO }}:${{ steps.meta_gh.outputs.version }}          
