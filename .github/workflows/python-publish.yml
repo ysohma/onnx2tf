@@ -1,22 +1,17 @@
 name: Upload Python Package
 
 on:
-  push:
   release:
     types: [published]
 
 env:
   REGISTRY: ghcr.io
   DOCKER_REGISTRY: docker.io
-  # todo
-  # DOCKER_REGISTRY_USER: pinto0309
-  DOCKER_REGISTRY_USER: sohma440
+  DOCKER_REGISTRY_USER: pinto0309
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   pypi-deploy:
-    # todo
-    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -39,8 +34,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    # todo
-    # needs: pypi-deploy
+    needs: pypi-deploy
     permissions:
       contents: read
       packages: write
@@ -63,6 +57,7 @@ jobs:
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
 
+      # For Github Container Registory
       - name: Log in to GCR
         uses: docker/login-action@v3
         with:
@@ -73,8 +68,7 @@ jobs:
         id: meta_gh
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}  
       - name: Build and push by digest to GCR
         id: build_gh
         uses: docker/build-push-action@v5
@@ -83,12 +77,11 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           labels: ${{ steps.meta_gh.outputs.labels }}
-          # todo
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Docker Hub
+      # For Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -99,7 +92,7 @@ jobs:
         id: meta_dh
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Build and push by digest to Docker Hub
         id: build_dh
         uses: docker/build-push-action@v5
@@ -108,8 +101,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           labels: ${{ steps.meta_gh.outputs.labels }}
-          # todo
-          outputs: type=image,name=${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -177,14 +169,12 @@ jobs:
         id: meta_dh
         uses: docker/metadata-action@v5
         with:
-          # todo
-          images: ${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Create manifest list and push to Docker Hub
         working-directory: /tmp/digests/dh
-        # todo
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-          $(printf '${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf@sha256:%s ' *)          
+          $(printf '${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)          
       - name: Inspect image on Docker Hub
         run: |
-          docker buildx imagetools inspect ${{ env.DOCKER_REGISTRY }}/sohma440/onnx2tf:${{ steps.meta_dh.outputs.version }}          
+          docker buildx imagetools inspect ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta_dh.outputs.version }}          
