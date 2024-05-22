@@ -159,7 +159,7 @@ jobs:
             ${{ env.DH_REPO }}
 
       - name: Create manifest list and push to GCR
-        working-directory: /tmp/digests/gh
+        working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
           $(printf '${{ env.GCR_REPO }}@sha256:%s ' *)
